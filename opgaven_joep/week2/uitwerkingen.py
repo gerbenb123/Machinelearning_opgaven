@@ -10,30 +10,27 @@ def plotNumber(nrVector):
     # gespiegeld en geroteerd. Zie de documentatie op 
     # https://docs.scipy.org/doc/numpy/reference/generated/numpy.reshape.html
 
-    new_vector = np.reshape(nrVector, (20, 20), order='A')
+    new_vector = np.reshape(nrVector, (20, 20), order='A').T
     plt.matshow(new_vector)
     plt.show()
 
 # ==== OPGAVE 2a ====
-def calculate_one_sigmoid(value):
-    return np.round(np.divide(1, 1 + np.exp(-value)), 5)
+
+def one_sigmoid(value):
+    return 1 / (1 + np.exp(-value))
 
 def sigmoid(z):
     # Maak de code die de sigmoid van de input z teruggeeft. Zorg er hierbij
     # voor dat de code zowel werkt wanneer z een getal is als wanneer z een
     # vector is.
     # Maak gebruik van de methode exp() in NumPy.
-    if type(z) == int:
-        return calculate_one_sigmoid(z)
 
-    #todo return is fout
-    else:
-        rows, columns = np.shape(z)
-        if rows > columns:
-            z = np.transpose(z)
-        sigmoid_array = np.squeeze(np.asarray(z))
-        sigmoid_array = np.fromiter((calculate_one_sigmoid(i) for i in sigmoid_array), float)
-        return sigmoid_array
+    if isinstance(z, int):
+        return one_sigmoid(z)
+    if z.shape[0] > z.shape[1]:
+        z = z.T
+
+    return np.array([one_sigmoid(i) for i in z])[0]
 
 
 
@@ -46,16 +43,15 @@ def get_y_matrix(y, m):
     # y_i=10, dan is regel i in de matrix [0,0,...1] (in dit geval is de breedte
     # van de matrix 10 (0-9), maar de methode moet werken voor elke waarde van 
     # y en m
+    width = np.max(y)
+    new_y = y.copy()
+    new_y[new_y == width] = 0
+    rows = [i for i in range(m)]
+    data = [1 for _ in range(m)]
+    y_vec = csr_matrix((data, (rows, new_y.T[0])), shape=(m, width)).toarray()
 
-    #TODO: this is ugly
-    cols = np.transpose(y)[0]
-    cols[cols == 10] = 0
-    width = np.max(cols) + 1
-    rows = np.array([i for i in range(len(cols))])
-    data = np.array([1 for _ in range(len(cols))])
-
-    y_vec = csr_matrix((data, (rows, cols)), shape=(m, width)).toarray()
     return y_vec
+
 
 
 # ==== OPGAVE 2c ==== 
@@ -82,12 +78,21 @@ def predictNumber(Theta1, Theta2, X):
 
     # Voeg enen toe aan het begin van elke stap en reshape de uiteindelijke
     # vector zodat deze dezelfde dimensionaliteit heeft als y in de exercise.
+    ones = np.ones((1, X.shape[0])).T
+    a1 = np.c_[ones, X].T
+    z2 = np.dot(Theta1, a1)
+    a2 = np.array([sigmoid(np.array(i, ndmin=2)) for i in z2])
+    ones = np.ones((1, z2.shape[1]))
+    a2 = np.r_[ones, a2]
+    z3 = np.dot(Theta2, a2)
 
-    pass
-
+    return np.array([sigmoid(np.array(i, ndmin=2)) for i in z3]).T
 
 
 # ===== deel 2: =====
+def cost_of_one(prediction, y):
+    return np.multiply(-y, np.log(prediction)) - np.multiply((1 - y), np.log(1 - prediction))
+
 def computeCost(Theta1, Theta2, X, y):
     # Deze methode maakt gebruik van de methode predictNumber() die je hierboven hebt
     # geïmplementeerd. Hier wordt het voorspelde getal vergeleken met de werkelijk 
@@ -96,10 +101,13 @@ def computeCost(Theta1, Theta2, X, y):
     # geretourneerd.
     # Let op: de y die hier binnenkomt is de m×1-vector met waarden van 1...10. 
     # Maak gebruik van de methode get_y_matrix() die je in opgave 2a hebt gemaakt
-    # om deze om te zetten naar een matrix. 
+    # om deze om te zetten naar een matrix.
+    predictions = predictNumber(Theta1, Theta2, X)
+    actual = get_y_matrix(y, X.shape[0])
+    differences = predictions - actual
 
-    pass
-
+    cost = np.array([np.sum(cost_of_one(predictions[i], actual[i])) for i in range(len(differences))], ndmin=2).T
+    return sum(cost) / len(cost)
 
 
 # ==== OPGAVE 3a ====
@@ -107,23 +115,36 @@ def sigmoidGradient(z):
     # Retourneer hier de waarde van de afgeleide van de sigmoïdefunctie.
     # Zie de opgave voor de exacte formule. Zorg ervoor dat deze werkt met
     # scalaire waarden en met vectoren.
-
-    pass
+    return np.multiply(sigmoid(z), 1 - sigmoid(z))
 
 # ==== OPGAVE 3b ====
 def nnCheckGradients(Theta1, Theta2, X, y): 
     # Retourneer de gradiënten van Theta1 en Theta2, gegeven de waarden van X en van y
     # Zie het stappenplan in de opgaven voor een mogelijke uitwerking.
 
-    Delta2 = np.zeros(Theta1.shape)
-    Delta3 = np.zeros(Theta2.shape)
-    m = 1 #voorbeeldwaarde; dit moet je natuurlijk aanpassen naar de echte waarde van m
+    # Deze heb ik hernoemd naar hoe ze in de reader staan.
+    Delta1 = np.zeros(Theta1.shape)
+    Delta2 = np.zeros(Theta2.shape)
+    m = X.shape[0] # voorbeeldwaarde; dit moet je natuurlijk aanpassen naar de echte waarde van m
+    new_y = get_y_matrix(y, X.shape[0])
 
-    for i in range(m): 
-        #YOUR CODE HERE
-        pass
+    for i in range(m):
+        #xi zijn de activaties van de pixels van X[i] (1 picture)
+        xi = np.array([X[i]], ndmin=2)
 
+        a1 = np.c_[1, xi]
+        z2 = np.dot(Theta1, a1.T)
+        a2 = np.c_[1, np.array([sigmoid(np.array(i, ndmin=2)) for i in z2]).T]
+
+        a3 = predictNumber(Theta1, Theta2, xi)
+        delta_3 = a3 - new_y[i]
+
+        differential = np.c_[1, np.array([sigmoidGradient(z2)], ndmin=2)]
+        delta_2 = np.dot(Theta2.T, delta_3.T).T * differential
+        Delta2 += np.dot(delta_3.T, a2)
+        Delta1 += np.dot(np.array(np.delete(delta_2.T, 0), ndmin=2).T, a1)
+
+    Delta1_grad = Delta1 / m
     Delta2_grad = Delta2 / m
-    Delta3_grad = Delta3 / m
     
-    return Delta2_grad, Delta3_grad
+    return Delta1_grad, Delta2_grad

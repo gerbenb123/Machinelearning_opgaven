@@ -142,7 +142,7 @@ if __name__ == '__main__':
     args = ( X, y)
     print ("")
     print ("Gebruik scipy.optimize.minimize om het netwerk te trainen...")
-    res = minimize(nnCostFunction, init_params, args=args, method='CG', callback=callbackF, jac=True, options={'maxiter':30,'disp':True})
+    res = minimize(nnCostFunction, init_params, args=args, method='CG', callback=callbackF, jac=True, options={'maxiter':100,'disp':True})
     size = hidden_layer_size * (input_layer_size+1) #voor de bias-node die wel in de matrix zit maar niet geplot moet worden
     res_Theta1 = res['x'][:size].reshape(hidden_layer_size, input_layer_size+1)
     res_Theta2 = res['x'][size:].reshape(num_labels, hidden_layer_size+1)
@@ -155,9 +155,13 @@ if __name__ == '__main__':
     print ("De kosten die gemoeid zijn met de huidige waarden van Theta1 en Theta2 zijn {}".format(cost))
     print ("Dit zou een stuk lager moeten zijn dan in het begin.")
 
-    pred = np.argmax(predictNumber(res_Theta1,res_Theta2,X), axis=1)+1
+    pred = np.argmax(predictNumber(res_Theta1, res_Theta2,X), axis=1)
+    pred[pred == 0] = 10
     pred = pred.reshape(m,1)
     acc = np.count_nonzero([pred - y == 0])
+    print(pred)
+    print(y)
+    print(acc)
     print ("correct geclassificeerd: {}".format(acc))
     print ("De huidige accuratessse van het netwerk is {} %".format(100 * acc/ m))
     print ("Dat zou een stuk hoger moeten zijn dan in het begin.")

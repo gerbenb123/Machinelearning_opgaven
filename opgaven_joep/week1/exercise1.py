@@ -54,6 +54,7 @@ if __name__ == '__main__':
     alpha = 0.01
     num_iters = 1500
     theta = np.zeros((1, 2))
+
     theta = gradientDescent(X, y, theta, alpha, num_iters)
     print("De gevonden waarde voor theta={}".format(theta))
     print("Deze waarde zou rond de (-3.63, 1.16) moeten liggen.");

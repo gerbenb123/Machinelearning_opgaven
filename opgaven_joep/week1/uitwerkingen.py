@@ -18,13 +18,9 @@ def drawGraph(data):
     # Om deze constructie in dit specifieke geval te kunnen gebruiken, moet de data-matrix wel eerst
     # roteren (waarom?).
     # Maak gebruik van pytplot.scatter om dit voor elkaar te krijgen.
-
-    profit = [i[0] for i in data]
-    population = [i[1] for i in data]
-
-    plt.scatter(profit, population)
+    x, y = data.T
+    plt.scatter(x, y)
     plt.show()
-
 
 
 def computeCost(X, y, theta):
@@ -47,13 +43,11 @@ def computeCost(X, y, theta):
     #    4. kwadrateer dit verschil
     #    5. tal al deze kwadraten bij elkaar op en deel dit door twee keer het aantal datapunten
 
-    J = 0
+    amount_of_datapoints = np.size(X)
+    predictions = np.dot(X, theta)
+    errors = (predictions - y) ** 2
+    J = np.sum(errors) / amount_of_datapoints
 
-    amount_of_datapoints = len(X)
-    prediction = [[theta[0][0], theta[1][0]] * data for data in X]
-    differences = [abs(prediction[i] - y[i]) for i in list(range(amount_of_datapoints))]
-    squared = [difference **2 for difference in differences]
-    J = (sum(squared)/(2 * amount_of_datapoints))[0]
     return J
 
 
@@ -76,24 +70,16 @@ def gradientDescent(X, y, theta, alpha, num_iters):
     #   4. update de i-de parameter van theta, namelijk door deze te verminderen met
     #      alpha keer het gemiddelde van de som van de vermenigvuldiging uit 3
 
-    m,n = X.shape
+    m, n = X.shape
 
+    for i in range(num_iters):
 
-    for i in list(range(1, num_iters)):
-        index = i % m
-        datapoint_prediction = theta * X[index]
-        datapoint_difference = abs(datapoint_prediction - y[index])
-        datapoint_sum = X[index] * datapoint_difference
-
-        predictions = [theta * X[x_index] for x_index in list(range(m))]
-        differences = [abs(predictions[j] - y[j]) for j in list(range(m))]
-        total = [differences[k] * X[index] for k in list(range(m))]
-        average_difference = sum(total)/m
-
-        theta -= [round(num, 2) for num in (alpha * average_difference)[0]]
-        thetaTest = theta
-
-
+        predictions = theta * X
+        differences = np.array(predictions[:, 0] + predictions[:, 1], ndmin=2).T - y
+        theta_0 = differences * np.array(X[:, 0], ndmin=2).T
+        theta_1 = differences * np.array(X[:, 1], ndmin=2).T
+        theta[0][0] -= alpha * np.sum(theta_0) / m
+        theta[0][1] -= alpha * np.sum(theta_1) / m
 
     # aan het eind van deze loop retourneren we de nieuwe waarde van theta
     # (wat is de dimensionaliteit van theta op dit moment?).
@@ -103,7 +89,7 @@ def gradientDescent(X, y, theta, alpha, num_iters):
 def contourPlot(X, y):
     #OPGAVE 4
     # Deze methode tekent een contour plot voor verschillende waarden van theta_0 en theta_1.
-    # De infrastructuur en algemene opzet is al gegeven; het enige wat je hoeft te doen is 
+    # De infrastructuur en algemene opzet is al gegeven; het enige wat je hoeft te doen is
     # de matrix J_vals vullen met waarden die je berekent aan de hand van de methode computeCost,
     # die je hierboven hebt gemaakt.
     # Je moet hiervoor door de waarden van t1 en t2 itereren, en deze waarden in een ndarray
@@ -119,8 +105,10 @@ def contourPlot(X, y):
     T1, T2 = np.meshgrid(t1, t2)
 
     J_vals = np.zeros( (len(t2), len(t2)) )
-
-    #YOUR CODE HERE 
+    for i in range(len(t1)):
+        for j in range(len(t2)):
+            new_theta = np.array([t1[i], t2[j]])
+            J_vals[i][j] = computeCost(X, y, new_theta) / len(t1)
 
     surf = ax.plot_surface(T1, T2, J_vals, rstride=1, cstride=1, cmap=cm.coolwarm, linewidth=0, antialiased=False)
 
@@ -131,3 +119,4 @@ def contourPlot(X, y):
     ax.dist = 10
 
     plt.show()
+
