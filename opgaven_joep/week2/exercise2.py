@@ -143,7 +143,7 @@ if __name__ == '__main__':
     print ("")
     print ("Gebruik scipy.optimize.minimize om het netwerk te trainen...")
     res = minimize(nnCostFunction, init_params, args=args, method='CG', callback=callbackF, jac=True, options={'maxiter':100,'disp':True})
-    size = hidden_layer_size * (input_layer_size+1) #voor de bias-node die wel in de matrix zit maar niet geplot moet worden
+    size = hidden_layer_size * (input_layer_size+1) # voor de bias-node die wel in de matrix zit maar niet geplot moet worden
     res_Theta1 = res['x'][:size].reshape(hidden_layer_size, input_layer_size+1)
     res_Theta2 = res['x'][size:].reshape(num_labels, hidden_layer_size+1)
 

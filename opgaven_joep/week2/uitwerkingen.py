@@ -11,7 +11,7 @@ def plotNumber(nrVector):
     # https://docs.scipy.org/doc/numpy/reference/generated/numpy.reshape.html
 
     new_vector = np.reshape(nrVector, (20, 20), order='A').T
-    plt.matshow(new_vector)
+    plt.imshow(new_vector, cmap='Greys')
     plt.show()
 
 # ==== OPGAVE 2a ====
